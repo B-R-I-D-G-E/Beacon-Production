@@ -89,7 +89,7 @@ services:
 
   db:
     image: mongo:5
-    command: --wiredTigerCacheSizeGB 4
+    command: ["--wiredTigerCacheSizeGB", "4", "--replSet", "rs0", "--bind_ip_all"]
     #command: --wiredTigerCacheSizeGB 4 --sslMode requireSSL --tlsCertificateKeyFile test-server1.pem --tlsCAFile test-ca.pem
     hostname: mongo
     container_name: mongoprod
@@ -110,8 +110,58 @@ services:
       #- ./test-client.pem:/test-client.pem
     networks:
       - pub
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
     #command: --verbose
-  
+
+  # One-shot job: turns the single mongo node into a (single-member) Replica
+  # Set, which is a hard requirement for MongoDB Change Streams. Safe to
+  # re-run: it checks rs.status() first and does nothing if already initiated.
+  db-rs-init:
+    image: mongo:5
+    container_name: mongoprod-rs-init
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - pub
+    restart: "no"
+    entrypoint: ["bash", "-c"]
+    command:
+      - |
+        mongosh --host mongo:27017 -u root -p example --authenticationDatabase admin --quiet --eval '
+          try {
+            rs.status();
+            print("Replica set already initiated");
+          } catch (e) {
+            rs.initiate({
+              _id: "rs0",
+              members: [{ _id: 0, host: "mongo:27017" }]
+            });
+            print("Replica set initiated");
+          }
+        '
+
+  pathogenicity-watcher:
+    restart: unless-stopped
+    build:
+      context: .
+    container_name: pathogenicity-watcher
+    entrypoint: ['python', '-m', 'beacon.watcher']
+    depends_on:
+      - db-rs-init
+    env_file:
+      - ./beacon/watcher/watcher.env
+    volumes:
+      - ./beacon/connections/mongo/conf.py:/beacon/connections/mongo/conf.py
+      - ./beacon/watcher:/beacon/watcher
+    networks:
+      - pub
+      - beacon-network
+
   mongo-express:
     image: mongo-express
     restart: always

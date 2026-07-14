@@ -1,6 +1,6 @@
 {
-  "id" : "Beacon",
-  "realm" : "Beacon",
+  "id" : "Beacon_hsjd_bio",
+  "realm" : "Beacon_hsjd_bio",
   "displayName" : "Beacon IdP",
   "notBefore" : 0,
   "revokeRefreshToken" : false,
@@ -48,7 +48,7 @@
       "description" : "${role_offline-access}",
       "composite" : false,
       "clientRole" : false,
-      "containerId" : "Beacon",
+      "containerId" : "Beacon_hsjd_bio",
       "attributes" : { }
     }, {
       "id" : "fac1fd59-414a-4404-9dad-5c8966d14702",
@@ -56,7 +56,7 @@
       "description" : "${role_uma_authorization}",
       "composite" : false,
       "clientRole" : false,
-      "containerId" : "Beacon",
+      "containerId" : "Beacon_hsjd_bio",
       "attributes" : { }
     } ],
     "client" : {

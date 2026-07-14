@@ -155,6 +155,42 @@ Check the logs until the beacon is ready to be queried:
 docker compose logs -f beaconprod
 ```
 
+## Pathogenicity change watcher (cross-node discrepancy alerts)
+
+MongoDB now runs as a (single-node) Replica Set — `db` starts with `--replSet rs0`,
+and the one-shot `db-rs-init` service runs `rs.initiate()` the first time the
+stack comes up. This is required because MongoDB Change Streams (used below)
+are backed by the oplog, which only exists on a Replica Set.
+
+A dedicated `pathogenicity-watcher` service watches the local `caseLevelData`
+collection for updates to `clinicalInterpretations[].clinicalRelevance` (the
+pathogenicity/clinical classification of a variant). On every such change it:
+
+1. Reads the new classification and the variant identifier from the changed document.
+2. Asks the central Beacon Network (the aggregator from `beacon-network-docker`)
+   what every member node reports for that same variant, via the standard
+   `g_variants` GA4GH endpoint.
+3. If any node reports a different classification, logs a warning and raises
+   an alert (see `beacon/watcher/mailer.py`).
+
+Configuration lives in `beacon/watcher/watcher.env`:
+
+- `NODE_NAME` — label for this node, shown in log lines and alerts.
+- `BEACON_NETWORK_URL` — base URL of the central Beacon Network aggregator
+  (e.g. `http://nginx/beacon-network/v2.0.0`).
+- `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASSWORD` / `SMTP_USE_TLS` /
+  `EMAIL_FROM` / `EMAIL_TO_ALERTS` — outgoing mail settings for the alert
+  email. **These are not wired up to a real mailer yet**: until they are
+  filled in, `beacon/watcher/mailer.py` only logs the alert instead of
+  sending it (see the `TODO` in that file for the `smtplib` snippet to
+  enable once credentials are available).
+
+To scale this to a multi-node deployment, run this same `pathogenicity-watcher`
+service on each local node (pointed at its own local MongoDB and at the
+shared central `BEACON_NETWORK_URL`) rather than a single instance polling
+every node — this keeps the architecture decentralized and avoids a
+single point of failure.
+
 ## Usage
 
 You can query the beacon using GET or POST. Below, you can find some examples of usage:
