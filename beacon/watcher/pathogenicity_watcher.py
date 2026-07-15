@@ -18,9 +18,12 @@ CHANGE_STREAM_PIPELINE = [
 
 
 def _touched_clinical_relevance(updated_fields: dict) -> bool:
-    """True if the update touched clinicalInterpretations[*].clinicalRelevance
-    specifically, as opposed to some unrelated field on the same document."""
-    return any("clinicalInterpretations" in field and "clinicalRelevance" in field for field in updated_fields)
+    """True if the update touched clinicalInterpretations (or a
+    clinicalRelevance field inside it), as opposed to some unrelated field
+    on the same document. Covers both a whole-array replace (field path is
+    just "clinicalInterpretations") and a targeted element update (field
+    path like "clinicalInterpretations.0.clinicalRelevance")."""
+    return any(field.startswith("clinicalInterpretations") for field in updated_fields)
 
 
 def _variant_id_from_document(document: dict) -> str:

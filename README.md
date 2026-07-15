@@ -162,6 +162,22 @@ and the one-shot `db-rs-init` service runs `rs.initiate()` the first time the
 stack comes up. This is required because MongoDB Change Streams (used below)
 are backed by the oplog, which only exists on a Replica Set.
 
+Since authentication is enabled (`MONGO_INITDB_ROOT_USERNAME`/`PASSWORD`), Mongo
+also requires a keyfile to authenticate traffic between replica set members —
+even with a single member. Generate it once before the first `docker compose up`:
+
+```bash
+mkdir -p beacon/connections/mongo/keyfile
+openssl rand -base64 756 > beacon/connections/mongo/keyfile/mongo-keyfile
+chmod 600 beacon/connections/mongo/keyfile/mongo-keyfile
+```
+
+This file is a secret (gitignored) — generate a new one per deployment, don't
+share it, and if you already had a `data/db` volume from before this change,
+wipe it (`rm -rf beacon/connections/mongo/data/db/*`) since a pre-existing
+standalone dataset needs `rs.initiate()` to run against a fresh or
+already-consistent data directory.
+
 A dedicated `pathogenicity-watcher` service watches the local `caseLevelData`
 collection for updates to `clinicalInterpretations[].clinicalRelevance` (the
 pathogenicity/clinical classification of a variant). On every such change it:
