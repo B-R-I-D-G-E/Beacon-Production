@@ -3,7 +3,7 @@ version: '3.1'
 networks:
   idp-priv:
   pub:
-  beacon-network:
+  beacon-net-sjd:
     external:
       True
 
@@ -25,7 +25,7 @@ services:
       - ./beacon/conf/models:/beacon/conf/models
     networks:
       - pub
-      - beacon-network
+      - beacon-net-sjd
 
   admin-ui:
     restart: always
@@ -161,7 +161,7 @@ services:
       - ./beacon/watcher:/beacon/watcher
     networks:
       - pub
-      - beacon-network
+      - beacon-net-sjd
 
   mongo-express:
     image: mongo-express
