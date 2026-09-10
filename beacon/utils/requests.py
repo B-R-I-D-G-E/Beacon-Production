@@ -224,26 +224,23 @@ def set_entry_type_configuration(self):
 @log_with_args(config.level)
 def set_entry_type(self, request):
     '''
-    We receive an absolute url with a host and a port, the endpoint queried and the query string. We check that the url and host match with the beacon uri in conf and then
-    we keep the name of the endpoint checking if it matches an entry type in configuration and the internal id queried, if there is one.
+    We receive the request path (independent of scheme/host, so it stays correct behind a reverse proxy
+    that doesn't rewrite the Host header to match config.uri) and strip the configured uri_subpath from it
+    to keep the name of the endpoint queried, checking if it matches an entry type in configuration and the
+    internal id queried, if there is one.
     '''
-    abs_url_with_query_string=str(request.url)
-    abs_url=abs_url_with_query_string.split('?')
-    abs_url=abs_url[0]
-    starting_endpoint = len(config.uri) + len(config.uri_subpath)
-    def_uri = config.uri + config.uri_subpath
-    if 'https' not in abs_url and 'https' in def_uri:
-        abs_url = abs_url.replace('http', 'https')
-    if abs_url[:starting_endpoint] != def_uri :
-        LOG.warning('configuration variable uri: {} not the same as where the beacon is hosted'.format(config.uri))
-    if abs_url_with_query_string.endswith('/api'):
+    request_path = request.path
+    if not request_path.startswith(config.uri_subpath):
+        LOG.warning('configuration variable uri_subpath: {} is not a prefix of the requested path: {}'.format(config.uri_subpath, request_path))
+    stripped_path = request_path[len(config.uri_subpath):]
+    if request_path == config.uri_subpath:
         RequestAttributes.entry_type='info'
         set_entry_type_configuration(self)
     else:
-        path_list = abs_url[starting_endpoint:].split('/')
+        path_list = stripped_path.split('/')
         path_list = list(filter(None, path_list))
         if path_list == []:
-            raise WrongURIPath('the {} parameter from conf.py is not the same as the root one received in request: {}. Configure you uri accordingly.'.format(config.uri, abs_url))
+            raise WrongURIPath('the {} parameter from conf.py is not the same as the root one received in request: {}. Configure you uri accordingly.'.format(config.uri, request_path))
         if len(path_list) > 2:
             try:
                 RequestAttributes.pre_entry_type=path_list[0]

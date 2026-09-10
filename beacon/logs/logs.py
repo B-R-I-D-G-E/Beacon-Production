@@ -51,11 +51,11 @@ def log_with_args_check_configuration(level):
                 elif f"{func.__name__}" == 'destroy':
                     LOG.info(f"{result} - Shutting down")
                 return result
-            except:
+            except Exception as e:
                 # Catch and log the error of the exception in case there is one for the funcion adding the function's name
                 err = "There was an exception in  "
                 err += func.__name__
-                LOG.error(f"check_configuration - {err}")
+                LOG.error(f"check_configuration - {err}: {e}", exc_info=True)
                 raise
         return wrapper
     return add_logging
@@ -78,11 +78,11 @@ def log_with_args_initial(level):
                 elif f"{func.__name__}" == 'destroy':
                     LOG.info(f"{result} - Shutting down")
                 return result
-            except:
+            except Exception as e:
                 # Catch and log the error of the exception in case there is one for the funcion adding the function's name
                 err = "There was an exception in  "
                 err += func.__name__
-                LOG.error(f"{result} - {err}")
+                LOG.error(f"{result} - {err}: {e}", exc_info=True)
                 raise
         return wrapper
     return add_logging
@@ -105,11 +105,11 @@ def log_with_args(level):
                 elif f"{func.__name__}" == 'destroy':
                     LOG.info(f"{self._id} - Shutting down")
                 return result
-            except:
+            except Exception as e:
                 # Catch and log the error of the exception in case there is one for the funcion adding the function's name
                 err = "There was an exception in  "
                 err += func.__name__
-                LOG.error(f"{self._id} - {err}")
+                LOG.error(f"{self._id} - {err}: {e}", exc_info=True)
                 raise
         return wrapper
     return add_logging
@@ -132,12 +132,11 @@ def log_with_args_mongo(level):
                 elif f"{func.__name__}" == 'destroy':
                     LOG.info(f"{self._id} - Shutting down")
                 return result
-            except Exception:
+            except Exception as e:
                 # Catch and log the error of the exception in case there is one for the funcion adding the function's name
                 err = "There was an exception in  "
                 err += func.__name__
-                LOG.error(f"{self._id} - {err}")
+                LOG.error(f"{self._id} - {err}: {e}", exc_info=True)
                 raise
         return wrapper
     return add_logging
-    
