@@ -3,7 +3,10 @@ version: '3.1'
 networks:
   idp-priv:
   pub:
-  beacon-net-sjd:
+  beacon-int:
+    external:
+      True
+  beacon-network:
     external:
       True
 
@@ -24,8 +27,8 @@ services:
       - ./beacon/models:/beacon/models
       - ./beacon/conf/models:/beacon/conf/models
     networks:
-      - pub
-      - beacon-net-sjd
+      - beacon-int
+      #- beacon-network
 
   admin-ui:
     restart: always
@@ -110,7 +113,7 @@ services:
       #- ./test-ca.pem:/test-ca.pem
       #- ./test-client.pem:/test-client.pem
     networks:
-      - pub
+      - beacon-int
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
       interval: 5s
@@ -129,6 +132,7 @@ services:
         condition: service_healthy
     networks:
       - pub
+      - beacon-int
     restart: "no"
     entrypoint: ["bash", "-c"]
     command:
@@ -144,7 +148,8 @@ services:
             });
             print("Replica set initiated");
           }
-        '
+        }
+        ' 
 
   pathogenicity-watcher:
     restart: unless-stopped
@@ -160,8 +165,8 @@ services:
       - ./beacon/connections/mongo/conf.py:/beacon/connections/mongo/conf.py
       - ./beacon/watcher:/beacon/watcher
     networks:
-      - pub
-      - beacon-net-sjd
+      - beacon-int
+      - beacon-network
 
   mongo-express:
     image: mongo-express
@@ -173,7 +178,7 @@ services:
       ME_CONFIG_MONGODB_ADMINPASSWORD: example
       ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
     networks:
-      - pub
+      - beacon-int
 
   beacon-ri-tools:
     image: ghcr.io/ega-archive/beacon2-ri-tools-v2:latest
